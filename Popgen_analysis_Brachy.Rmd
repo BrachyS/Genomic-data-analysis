@@ -139,7 +139,7 @@ pop(x)<-pop # Assign Pop information
 ```
 
 ```{r echo=FALSE, out.width = '100%'}
-include_graphics("CAbrachy_PCcolorplot.pdf")
+include_graphics("CAbrachy_PCcolorplot.png")
 ```
 PCA analysis revealed 9 clusters
 
