@@ -1,0 +1,180 @@
+---
+title: "Population genetic analysis"
+author: "Sabrina Liu"
+date: "7/3/2016"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+This documment demonstrates some population genetic analyses on the genotyping-by-sequencing data of an invasive plant species.
+
+Data: 167 individuals from 20 populations (collected in California) were sequenced via Genotyping-by-sequencing (GBS) and resulted in 5516 SNPs.
+
+Objective: Finding population structures, evolution history of the populations, as well as genomic relationships among the individuals.
+
+The genomics data (SNPs) of individuals is stored in a variable 'geno'. 
+
+```{r setup, include = FALSE, echo  =  FALSE}
+
+library(knitr)
+#knitr::opts_chunk$set(echo  =  TRUE)
+knitr::opts_knit$set(root.dir  =  "/Users/Sabrina/Documents/*R/0.MyRscript/adegenet.Practice.Sept2015")
+```
+
+## Data cleaning and manipulation
+Load required libraries 
+```{r message = FALSE,warning = FALSE}
+set.seed(1234)
+library("ggplot2")
+library("gplots")
+library("ape") # Analyses of Phylogenetics and Evolution
+library("adegenet") # Genetic data handling for multivariate analysis
+library("StAMPP") # For Fst and genomic matrix
+```
+
+```{r }
+# read in numberic raw file
+geno <- read.table("P9_10_no1.txt",header = T,na.strings = ".")
+
+# simplify accession names and add population info
+acc<-read.table("indi.names.loc_CA.txt")
+pop<-read.table("pop_CA.txt")
+pop.int<-read.table("pop_integer.txt")
+acc<-as.character(acc[,1])
+pop<-as.character(pop[,1])
+
+#strip marker info
+g <- geno[,-(1:11)] 
+dim(g) #dim 5516x176
+
+# switch columns and rows (transpose) 
+tg<-data.frame(t(g))
+
+#subset tg, remove unwanted accessions
+tg1<-tg[9:174,] #dim 166x5516
+dim(tg1)
+
+pop.t<-data.frame(t(pop))
+##
+colnames(tg1)[0]<-"Pop"
+rownames(tg1)<-c()
+
+# Write to file
+#snpdf<-cbind(acc,pop.int,tg1)
+#snpdf[is.na(snpdf)]<-"-9" #replace NA with -9 for STRUCTURE
+#write.table(snpdf,file = "CA.brachy.SNPdf.txt",sep = " ",row.names  =  FALSE)
+```
+
+```{r message = FALSE, warning = FALSE }
+# read in numberic raw file
+snpdf <- read.table("CA.brachy.SNPdf.txt")
+```
+
+
+```{r message = FALSE, warning = FALSE}
+dim(snpdf) 
+colnames(snpdf)[1:2] <- c("Accession","Population")
+snpdf[1:5,3:10] # Examine data
+```
+The data frame contains 165 sequenced plant accessions and 5516 SNP markers (loci). Missing data is denoted by '-9'
+
+```{r message = FALSE, warning = FALSE}
+#count numbers of zeros and twos at each loci for each population
+# "paste" was used to merge zero and two into one column for each loci
+snpsum<-aggregate(snpdf[paste0('V',3:5518)],by = snpdf['Population'],
+                  function(x) paste(zero = sum(x == "C/C"),two = sum(x == "A/A"),sep = ','))
+       
+snpsum[1:10,1:10] # Check data
+rownames(snpsum)<-snpsum[,1]
+colnames(snpsum)<-NULL
+snpsum<-snpsum[,-1] # Remove population column
+dim(snpsum) 
+```
+
+## Simulate population migration history using software Treemix (run from terminal)
+```{r message = FALSE, warning = FALSE}
+tsnpsum<-t(snpsum)
+#tsnpsum[1:10,1:2]
+rownames(tsnpsum)<-NULL
+
+# Assign population origin names
+pop.name<-c("Fremont1","Fremont2","KirkCreek","MorroBay1","MorroBay2","SantaBarbara","LosAngeles","LongBeach","DanaPoint","SanDiego","ChulaVista","DonPedroReservior1","DonPedroReservior2","Winters1","Winters2","Folsom1","Folsom2","Folsom3","Oroville","Chico")
+colnames(tsnpsum)<-pop.name
+
+```
+
+```{r }
+#after running treemix from terminal, plotting via R:
+#source("/Users/Sabrina/Documents/Software/Treemix/treemix-1.12/src/plotting_funcs.R")
+#setwd("/Users/Sabrina/Documents/Software/Treemix/brachydata/")
+#plot_tree("CAbrachy")
+```
+
+```{r pressure, echo=FALSE, fig.cap="A caption", out.width = '100%'}
+include_graphics("/Users/Sabrina/Documents/*R/0.MyRscript/adegenet.Practice.Sept2015/CAbrachy-Tree-SantaBarbara.pdf")
+
+```
+
+Higher difference in drift parameters between two populations indicate that they have likely diverged from each other for longer time. 
+
+```{r message = FALSE, warning = FALSE}
+# Generate "genlight" object from SNP data, which stores multiple genotypes 
+#subset snpdf, remove accession and population columns
+#tg1<-snpdf[,3:5518] #dim 166x5516
+#tg1[tg1 =  = "-9"]<-NA
+x<-new("genlight",tg1)
+indNames(x)<-acc #add accession (individual) name
+pop(x)<-pop # Assign Pop information
+```
+
+## Principal component analysis 
+```{r warning = FALSE}
+#pca1<-glPca(x) # select a number of 2 axes.
+#scatter(pca1,posi = "bottomright") #
+#myCol<-colorplot(pca1$scores,pca1$scores,transp = TRUE,cex = 4)
+#text(pca1$scores[,1],pca1$scores[,2],x$pop,cex = 1)
+#abline(h = 0,v = 0,col = "grey")
+#add.scatter.eig(pca1$eig[1:40],2,1,2,posi = "topright",inset = .05,ratio = .3)
+```
+
+```{r echo=FALSE, fig.cap="A caption", out.width = '100%'}
+include_graphics("/Users/Sabrina/Documents/*R/0.MyRscript/adegenet.Practice.Sept2015/CAbrachy_PCcolorplot.pdf")
+```
+PCA analysis revealed 9 clusters
+
+## Population genetic analysis
+```{r message = FALSE, warning = FALSE}
+#stAMPP for F-stats and genomic matrix ####
+# use genlight object "x" 
+ploidy(x)<-1 # treat as haploids
+x.freq<-stamppConvert(x,type = "genlight") 
+
+# calculate Nei's Genetic Distance by populations ####
+Nei.pop<-stamppNeisD(x.freq,pop = TRUE)
+# calculate Nei's Genetic Distance by individuals
+Nei.ind<-stamppNeisD(x.freq,pop = FALSE)
+
+# Calculate Fst####
+fst<-stamppFst(x.freq,nboots = 100,percent = 95,nclusters = 2) # Return matrix of pair-wise values
+#write.csv(fst$Fsts,file = "CABrachy.1000bootfst.csv")
+```
+The genetic distance parameters among individuals or populations were returned in matrices. 
+
+## Create heapmap which shows genetic relatedness among sequenced individuals
+The plot shows 13 genetic clusters among individuals. Colors from yellow to red indicating increased genetic distance.
+```{r message = FALSE, warning = FALSE}
+# Calculating a genomic relationship matrix based on Yang et al(2010)####
+x.g<-stamppGmatrix(x.freq)
+
+# Generate a heatmap
+colors <- rev(heat.colors(256))
+colbr <- c(seq(-3, 1, len = length(colors)+1))
+heatmap.2(x.g, trace = 'none', col = colors, breaks = colbr, cexRow = 0.5,
+          margins = c(5,10),
+        xlab = "Assigned Individual ID (bottom right of x-axis labels corresponds to top right of y-axis labels ",
+        ylab = "Individual Name",
+        )
+
+```
+
