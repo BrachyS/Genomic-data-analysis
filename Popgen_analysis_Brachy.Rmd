@@ -18,8 +18,8 @@ The genomics data (SNPs) of individuals is stored in a variable 'geno'.
 ```{r setup, include = FALSE, echo  =  FALSE}
 
 library(knitr)
-#knitr::opts_chunk$set(echo  =  TRUE)
-knitr::opts_knit$set(root.dir  =  "/Users/Sabrina/Documents/*R/0.MyRscript/adegenet.Practice.Sept2015")
+knitr::opts_chunk$set(echo  =  TRUE)
+#knitr::opts_knit$set(root.dir  =  "/Users/Sabrina/Documents/*R/0.MyRscript/adegenet.Practice.Sept2015")
 ```
 
 ## Data cleaning and manipulation
@@ -111,8 +111,8 @@ colnames(tsnpsum)<-pop.name
 #plot_tree("CAbrachy")
 ```
 
-```{r pressure, echo=FALSE, fig.cap="A caption", out.width = '100%'}
-include_graphics("/Users/Sabrina/Documents/*R/0.MyRscript/adegenet.Practice.Sept2015/CAbrachy-Tree-SantaBarbara.pdf")
+```{r pressure, echo=FALSE, out.width = '100%'}
+include_graphics("CAbrachy-Tree-SantaBarbara.png")
 
 ```
 
@@ -138,8 +138,8 @@ pop(x)<-pop # Assign Pop information
 #add.scatter.eig(pca1$eig[1:40],2,1,2,posi = "topright",inset = .05,ratio = .3)
 ```
 
-```{r echo=FALSE, fig.cap="A caption", out.width = '100%'}
-include_graphics("/Users/Sabrina/Documents/*R/0.MyRscript/adegenet.Practice.Sept2015/CAbrachy_PCcolorplot.pdf")
+```{r echo=FALSE, out.width = '100%'}
+include_graphics("CAbrachy_PCcolorplot.pdf")
 ```
 PCA analysis revealed 9 clusters
 
